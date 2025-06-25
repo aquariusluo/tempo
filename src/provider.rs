@@ -135,8 +135,11 @@ impl ToSignBytes for BaseProposal {
         // Add round (4 bytes)
         bytes.extend_from_slice(&self.round.0.as_u32().unwrap_or(0).to_le_bytes());
 
-        // Add value data
-        bytes.extend_from_slice(&self.value.extensions);
+        // Add value data (encode the block)
+        let value_bytes = crate::app::encode_value(&self.value);
+        // Add length prefix for value data
+        bytes.extend_from_slice(&(value_bytes.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&value_bytes);
 
         // Add proposer address (20 bytes)
         bytes.extend_from_slice(self.proposer.0.as_bytes());
