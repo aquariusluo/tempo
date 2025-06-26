@@ -1,3 +1,18 @@
+//! Reth node configuration for Malachite consensus.
+//!
+//! This module defines the node types and builders needed to configure a Reth node
+//! that uses Malachite consensus instead of the default consensus mechanisms. It
+//! integrates Malachite consensus into Reth's component architecture.
+//!
+//! # Components
+//!
+//! - [`RethNode`]: Node type configuration with Malachite consensus
+//! - [`MalachitePayloadServiceBuilder`]: Custom payload builder for Malachite
+//!
+//! The configuration uses standard Ethereum components for most functionality
+//! (transaction pool, networking, execution) but replaces the consensus layer
+//! with Malachite.
+
 use crate::consensus_utils::MalachiteConsensusBuilder;
 use reth::{
     payload::{PayloadBuilderHandle, PayloadServiceCommand},

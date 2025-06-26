@@ -35,15 +35,20 @@
 //!       |<--- Start Next Height -------------|
 //! ```
 //!
-//! ## Key Modules
+//! ## Main Modules
 //!
 //! - **`app`**: The application layer that interfaces with Reth's execution engine
 //! - **`consensus`**: Infrastructure for running the Malachite consensus engine
 //! - **`context`**: Type definitions that bridge Malachite and Reth types
-//! - **`block`**: Block-related types and utilities
 //! - **`provider`**: Cryptographic providers for signing and verification
 //! - **`cli`**: Command-line interface and chain specification
 //! - **`consensus_utils`**: Utilities for consensus integration with Reth's node builder
+//! - **`store`**: Persistent storage for consensus-related data
+//! - **`codec`**: Encoding/decoding implementations for consensus messages
+//! - **`types`**: Core type definitions used throughout the crate
+//! - **`height`**: Height-related utilities and conversions
+//! - **`proto`**: Generated protobuf types for Malachite communication
+//! - **`utils`**: General utility functions
 //!
 //! ## Usage
 //!

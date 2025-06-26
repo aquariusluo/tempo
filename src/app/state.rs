@@ -1,3 +1,24 @@
+//! Application state management for Malachite consensus integration.
+//!
+//! This module implements the core application logic that bridges Malachite consensus
+//! with Reth's execution engine. It handles:
+//!
+//! - Block proposal creation when requested by consensus
+//! - Block validation and execution when received from peers
+//! - State persistence and management across consensus rounds
+//! - Communication with Reth's engine API for block processing
+//!
+//! The [`State`] struct is the main entry point, implementing the Malachite application
+//! interface to respond to consensus events like proposal requests and commit decisions.
+//!
+//! # Architecture
+//!
+//! The state maintains connections to:
+//! - Reth's beacon engine handle for block execution
+//! - Payload builder for creating new blocks
+//! - Storage layer for persisting consensus data
+//! - Validator configuration and cryptographic keys
+
 use crate::{
     context::{BasePeerAddress, BasePeerSet, MalachiteContext},
     height::Height,
