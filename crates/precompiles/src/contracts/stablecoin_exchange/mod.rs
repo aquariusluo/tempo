@@ -284,15 +284,28 @@ impl<'a, S: StorageProvider> StablecoinExchange<'a, S> {
             .to::<u128>()
     }
 
-    pub fn create_pair(&mut self, base: &Address) {
+    pub fn create_pair(&mut self, base: &Address) -> B256 {
         let quote =
             TIP20Token::new(address_to_token_id_unchecked(base), self.storage).linking_token();
 
+        let book_key = compute_book_key(*base, quote);
         let book = Orderbook::new(*base, quote);
         book.store(self.storage, self.address);
 
-        // TODO: emit event
-        // emit PairCreated(key, base, quote);
+        // Emit PairCreated event
+        self.storage
+            .emit_event(
+                self.address,
+                StablecoinExchangeEvents::PairCreated(IStablecoinExchange::PairCreated {
+                    key: book_key,
+                    base: *base,
+                    quote,
+                })
+                .into_log_data(),
+            )
+            .expect("Event emission failed");
+
+        book_key
     }
 
     /// Place a limit order on the orderbook
@@ -2118,5 +2131,40 @@ mod tests {
         assert!(new_order.is_ask());
         assert_eq!(new_order.amount(), amount);
         assert_eq!(new_order.remaining(), amount);
+    }
+
+    #[test]
+    fn test_pair_created_event() {
+        let mut storage = HashMapStorageProvider::new(1);
+        let mut exchange = StablecoinExchange::new(&mut storage);
+        exchange.initialize();
+
+        let admin = Address::random();
+        let alice = Address::random();
+
+        // Setup tokens
+        let (base_token, quote_token) = setup_test_tokens(
+            exchange.storage,
+            &admin,
+            &alice,
+            exchange.address,
+            1_000_000u128,
+        );
+
+        // Create the pair
+        let key = exchange.create_pair(&base_token);
+
+        // Verify PairCreated event was emitted
+        let events = &exchange.storage.events[&exchange.address];
+        assert_eq!(events.len(), 1);
+        assert_eq!(
+            events[0],
+            StablecoinExchangeEvents::PairCreated(IStablecoinExchange::PairCreated {
+                key,
+                base: base_token,
+                quote: quote_token,
+            })
+            .into_log_data()
+        );
     }
 }

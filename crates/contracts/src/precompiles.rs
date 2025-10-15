@@ -307,6 +307,9 @@ sol! {
         function activeOrderId() external view returns (uint128);
         function pendingOrderId() external view returns (uint128);
 
+        // Pair management
+        function createPair(address base) external returns (bytes32 key);
+
         // Taker functions
         function sell(address tokenIn, address tokenOut, uint128 amountIn, uint128 minAmountOut) external returns (uint128 amountOut);
         function buy(address tokenIn, address tokenOut, uint128 amountOut, uint128 maxAmountIn) external returns (uint128 amountIn);
