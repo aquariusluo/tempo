@@ -675,7 +675,11 @@ impl<'a, S: PrecompileStorageProvider> TIP20Token<'a, S> {
         self.sstore_next_quote_token(quote_token)?;
 
         // Set default values
-        self.sstore_supply_cap(U256::MAX)?;
+        if self.storage.spec().is_moderato() {
+            self.sstore_supply_cap(U256::from(u128::MAX))?;
+        } else {
+            self.sstore_supply_cap(U256::MAX)?;
+        }
         self.sstore_transfer_policy_id(1)?;
 
         // Initialize roles system and grant admin role
@@ -2203,6 +2207,34 @@ pub(crate) mod tests {
             U256::ZERO,
             "user should NOT have accumulated rewards pre-Moderato"
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_initialize_supply_cap_post_moderato() -> eyre::Result<()> {
+        let mut storage = HashMapStorageProvider::new(1).with_spec(TempoHardfork::Moderato);
+        let admin = Address::random();
+
+        let token_id = setup_factory_with_token(&mut storage, admin, "Test", "TST");
+        let mut token = TIP20Token::new(token_id, &mut storage);
+
+        let supply_cap = token.supply_cap()?;
+        assert_eq!(supply_cap, U256::from(u128::MAX),);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_initialize_supply_cap_pre_moderato() -> eyre::Result<()> {
+        let mut storage = HashMapStorageProvider::new(1).with_spec(TempoHardfork::Adagio);
+        let admin = Address::random();
+
+        let token_id = setup_factory_with_token(&mut storage, admin, "Test", "TST");
+        let mut token = TIP20Token::new(token_id, &mut storage);
+
+        let supply_cap = token.supply_cap()?;
+        assert_eq!(supply_cap, U256::MAX,);
 
         Ok(())
     }
