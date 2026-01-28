@@ -25,13 +25,17 @@ The `unwrap()` was replaced with safe error handling that returns `InvalidTransa
 
 ## Bug #2: Integer Overflow in StablecoinDEX
 
-### Status: ❌ **NOT A BUG** - Safe intermediate calculations
+### Status: ✅ **FIXED** (commit 8fec50af)
 
 ### Location
-**File**: `crates/stablecoin-dex/src/lib.rs`
+**File**: `crates/precompiles/src/stablecoin_dex/mod.rs`
+**File**: `crates/precompiles/src/stablecoin_dex/orderbook.rs`
 
-### Investigation Findings
-The codebase uses `U256` for all financial calculations and performs checked arithmetic (`checked_mul`, `checked_div`, etc.) for every operation. Intermediate results are scaled up to prevent precision loss and then scaled down, staying well within `U256` limits.
+### Bug Description
+The `StablecoinDEX` implementation contained instances of naked arithmetic on `u128` and `i16` types. While `U256` was used for financial calculations, state updates like `next_order_id` incrementing and error reporting for price-to-tick conversions were vulnerable to overflow/underflow.
+
+### Fix
+Implemented `checked_add` and `checked_sub` for all critical state transitions and ensured safe casting in the error reporting paths.
 
 ---
 
@@ -115,10 +119,9 @@ The genesis files are embedded into the binary at compile time using the `includ
 ---
 
 ## Summary of Audit Result
-| Bug ID | Severity | Status | Action Taken |
-| :--- | :--- | :--- | :--- |
 | Bug #1 | Critical | ✅ Fixed | Replaced user-controlled `unwrap()` with `Result` |
+| Bug #2 | Low | ✅ Fixed | Hardened arithmetic in StablecoinDEX |
 | Bug #3 | Low | ✅ Fixed | Refactored journal access to be fallible |
-| Bug #2, 4-8 | N/A | ❌ False Positives | Verified logic and design intent |
+| Bug #4-8 | N/A | ❌ False Positives | Verified logic and design intent |
 
 **Conclusion**: The Tempo codebase demonstrates a high standard of defensive programming, particularly regarding integer arithmetic and state isolation. The identified crash vectors have been hardened, significantly improving the network's resilience to malformed inputs and storage inconsistencies.
