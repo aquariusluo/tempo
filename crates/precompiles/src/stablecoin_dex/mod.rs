@@ -3023,7 +3023,7 @@ mod tests {
 
             let tick = 1000i16;
             let price = tick_to_price(tick);
-            let order_amount_base = MIN_ORDER_AMOUNT;
+            let order_amount_base = MIN_ORDER_AMOUNT * 10; // Increase to ensure enough liquidity
 
             exchange.place(alice, base_token, order_amount_base, true, tick)?;
 
