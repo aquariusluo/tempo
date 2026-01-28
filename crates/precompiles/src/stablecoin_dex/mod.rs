@@ -3018,12 +3018,12 @@ mod tests {
             let admin = Address::random();
 
             let (base_token, quote_token) =
-                setup_test_tokens(admin, alice, exchange.address, 1_000_000_000u128)?;
+                setup_test_tokens(admin, alice, exchange.address, 10_000_000_000u128)?; // 10B to handle rounding
             exchange.create_pair(base_token)?;
 
             let tick = 1000i16;
             let price = tick_to_price(tick);
-            let order_amount_base = MIN_ORDER_AMOUNT * 10; // Increase to ensure enough liquidity
+            let order_amount_base = MIN_ORDER_AMOUNT; // 100M base requires ~101M quote at tick 1000
 
             exchange.place(alice, base_token, order_amount_base, true, tick)?;
 
