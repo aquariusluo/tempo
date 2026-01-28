@@ -683,14 +683,13 @@ impl StablecoinDEX {
         let amount_out = if order.is_bid() {
             // Bid maker receives base tokens (exact amount)
             self.increment_balance(order.maker(), orderbook.base, fill_amount)?;
-            let quote_amount = if let Some(q) = quote_override {
+            // Taker receives quote tokens - round DOWN
+            if let Some(q) = quote_override {
                 q
             } else {
                 base_to_quote(fill_amount, order.tick(), RoundingDirection::Down)
                     .ok_or(TempoPrecompileError::under_overflow())?
-            };
-            self.increment_balance(taker, orderbook.quote, quote_amount)?;
-            quote_amount
+            }
         } else {
             // Ask maker receives quote tokens - round UP
             let quote_amount = if let Some(q) = quote_override {
