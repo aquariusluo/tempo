@@ -431,7 +431,14 @@ pub fn tick_to_price(tick: i16) -> u32 {
 /// Convert scaled price to relative tick
 pub fn price_to_tick(price: u32) -> Result<i16> {
     if !(MIN_PRICE..=MAX_PRICE).contains(&price) {
-        let invalid_tick = (price as i32 - PRICE_SCALE as i32) as i16;
+        let invalid_tick = (price as i64)
+            .checked_sub(PRICE_SCALE as i64)
+            .map(|t| t as i16)
+            .unwrap_or(if price < MIN_PRICE {
+                MIN_TICK - 1
+            } else {
+                MAX_TICK + 1
+            });
         return Err(StablecoinDEXError::tick_out_of_bounds(invalid_tick).into());
     }
     Ok((price as i32 - PRICE_SCALE as i32) as i16)

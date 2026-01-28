@@ -61,7 +61,11 @@ impl StablecoinDEX {
     /// Increment next order ID
     fn increment_next_order_id(&mut self) -> Result<()> {
         let next_order_id = self.next_order_id()?;
-        self.next_order_id.write(next_order_id + 1)
+        self.next_order_id.write(
+            next_order_id
+                .checked_add(1)
+                .ok_or(TempoPrecompileError::under_overflow())?,
+        )
     }
 
     /// Get user's balance for a specific token
@@ -604,7 +608,10 @@ impl StablecoinDEX {
         let orderbook = self.books[order.book_key()].read()?;
 
         // Update order remaining amount
-        let new_remaining = order.remaining() - fill_amount;
+        let new_remaining = order
+            .remaining()
+            .checked_sub(fill_amount)
+            .ok_or(TempoPrecompileError::under_overflow())?;
         self.orders[order.order_id()]
             .remaining
             .write(new_remaining)?;
