@@ -473,7 +473,7 @@ where
                 self.states
                     .size()
                     .checked_sub(1)
-                    .expect("there must be at least one segment")
+                    .ok_or_eyre("there must be at least one segment")?
             };
             self.states
                 .prune(to_prune)
@@ -538,7 +538,7 @@ impl Builder {
             },
         )
         .await
-        .expect("unable to initialize DKG outcomes journal");
+        .wrap_err("unable to initialize DKG outcomes journal")?;
 
         let events = segmented::variable::Journal::init(
             context.with_label("events"),
@@ -551,7 +551,7 @@ impl Builder {
             },
         )
         .await
-        .expect("should be able to initialize events journal");
+        .wrap_err("should be able to initialize events journal")?;
 
         // Replay states to get current epoch
         if states.size() == 0 {
@@ -575,9 +575,9 @@ impl Builder {
                 .wrap_err("unable to sync states journal to persist initial state")?;
         }
         let current = {
-            let segment = states.size().checked_sub(1).expect(
+            let segment = states.size().checked_sub(1).ok_or_eyre(
                 "there must be at least one entry in the states journal; just populated it",
-            );
+            )?;
             states
                 .read(segment)
                 .await
@@ -979,7 +979,7 @@ pub(super) struct Round {
 }
 
 impl Round {
-    pub(super) fn from_state(state: &State, namespace: &[u8]) -> Self {
+    pub(super) fn from_state(state: &State, namespace: &[u8]) -> eyre::Result<Self> {
         // For full DKG, don't pass the previous output - this creates a new polynomial
         let previous_output = if state.is_full_dkg {
             None
@@ -987,7 +987,7 @@ impl Round {
             Some(state.output.clone())
         };
 
-        Self {
+        Ok(Self {
             epoch: state.epoch,
             dealers: state.dealers.keys().clone(),
             players: state.players.keys().clone(),
@@ -999,9 +999,9 @@ impl Round {
                 state.dealers.keys().clone(),
                 state.players.keys().clone(),
             )
-            .expect("a DKG round must always be initializable given some epoch state"),
+            .wrap_err("a DKG round must always be initializable given some epoch state")?,
             is_full_dkg: state.is_full_dkg,
-        }
+        })
     }
 
     pub(super) fn info(&self) -> &dkg::Info<MinSig, PublicKey> {

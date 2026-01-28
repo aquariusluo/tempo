@@ -247,7 +247,8 @@ where
             .wrap_err("could not instruct epoch manager to enter a new epoch")?;
 
         // TODO: emit an event with round info
-        let round = state::Round::from_state(&state, &self.config.namespace);
+        let round = state::Round::from_state(&state, &self.config.namespace)
+            .wrap_err("unable to determine the round info for this DKG ceremony")?;
 
         let mut dealer_state = storage
             .create_dealer_for_round(
