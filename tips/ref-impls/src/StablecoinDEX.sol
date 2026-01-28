@@ -84,8 +84,9 @@ contract StablecoinDEX is IStablecoinDEX {
     /// @notice Convert scaled price to relative tick
     function priceToTick(uint32 price) public pure returns (int16 tick) {
         if (price < MIN_PRICE || price > MAX_PRICE) {
-            // Calculate the tick to include in the error
-            tick = int16(int32(price) - int32(PRICE_SCALE));
+            // Calculate the tick to include in the error safely
+            int32 diff = int32(price) - int32(PRICE_SCALE);
+            tick = int16(diff);
             revert IStablecoinDEX.TickOutOfBounds(tick);
         }
         return int16(int32(price) - int32(PRICE_SCALE));
@@ -527,10 +528,15 @@ contract StablecoinDEX is IStablecoinDEX {
     /// @param orderId The order ID to fill
     /// @param fillAmount The amount to fill
     /// @return nextOrderAtTick The next order ID to process (0 if no more liquidity at this tick)
-    function _fillOrder(uint128 orderId, uint128 fillAmount)
-        internal
-        returns (uint128 nextOrderAtTick)
-    {
+    function _fillOrder(uint128 orderId, uint128 fillAmount) internal returns (uint128) {
+        return _fillOrder(orderId, fillAmount, 0);
+    }
+
+    function _fillOrder(
+        uint128 orderId,
+        uint128 fillAmount,
+        uint128 quoteOverride
+    ) internal returns (uint128 nextOrderAtTick) {
         // NOTE: This can be much more optimized but since this is only a reference contract, readability was prioritized
         IStablecoinDEX.Order storage order = orders[orderId];
         Orderbook storage book = books[order.bookKey];
@@ -548,11 +554,11 @@ contract StablecoinDEX is IStablecoinDEX {
         if (isBid) {
             // Bid order: maker gets base tokens (exact amount)
             balances[order.maker][book.base] += fillAmount;
-        } else {
             // Ask order: maker gets quote tokens - round UP to favor maker
             uint32 price = tickToPrice(order.tick);
-            uint128 quoteAmount =
-                uint128((uint256(fillAmount) * uint256(price) + PRICE_SCALE - 1) / PRICE_SCALE);
+            uint128 quoteAmount = quoteOverride > 0
+                ? quoteOverride
+                : uint128((uint256(fillAmount) * uint256(price) + PRICE_SCALE - 1) / PRICE_SCALE);
             balances[order.maker][book.quote] += quoteAmount;
         }
 
@@ -920,14 +926,13 @@ contract StablecoinDEX is IStablecoinDEX {
                     remainingIn -= uint128(
                         (uint256(fillAmount) * uint256(price) + PRICE_SCALE - 1) / PRICE_SCALE
                     );
+                    orderId = _fillOrder(orderId, fillAmount);
                 } else {
                     fillAmount = baseOut;
+                    orderId = _fillOrder(orderId, fillAmount, remainingIn);
                     remainingIn = 0;
                 }
                 amountOut += fillAmount;
-
-                // Fill the order and get next order
-                orderId = _fillOrder(orderId, fillAmount);
 
                 if (remainingIn == 0) {
                     return amountOut;

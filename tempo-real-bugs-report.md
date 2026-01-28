@@ -32,10 +32,10 @@ The `unwrap()` was replaced with safe error handling that returns `InvalidTransa
 **File**: `crates/precompiles/src/stablecoin_dex/orderbook.rs`
 
 ### Bug Description
-The `StablecoinDEX` implementation contained instances of naked arithmetic on `u128` and `i16` types. While `U256` was used for financial calculations, state updates like `next_order_id` incrementing and error reporting for price-to-tick conversions were vulnerable to overflow/underflow.
+The `StablecoinDEX` implementation contained instances of naked arithmetic and a rounding loss bug (TIP-1005). State transitions like `next_order_id` incrementing were vulnerable to overflow, and partial fills on ask orders could lead to token loss due to double-rounding.
 
 ### Fix
-Implemented `checked_add` and `checked_sub` for all critical state transitions and ensured safe casting in the error reporting paths.
+Hardened arithmetic with `checked_` operations and implemented a `quote_override` mechanism to ensure the zero-sum invariant is maintained during partial fills. Both the Rust precompile and Solidity reference implementation were updated.
 
 ---
 
