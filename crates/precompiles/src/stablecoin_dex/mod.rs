@@ -2277,7 +2277,10 @@ mod tests {
             assert_eq!(bob_base_balance, U256::from(amount_out));
 
             let alice_quote_exchange_balance = exchange.balance_of(alice, quote_token)?;
-            assert_eq!(alice_quote_exchange_balance, amount_in);
+            // Alice (maker) receives quote rounded UP: ceil(500_000 * 100_010 / 100_000) = 500_050
+            let expected_quote = base_to_quote(amount_out, tick, RoundingDirection::Up).unwrap();
+            assert_eq!(alice_quote_exchange_balance, expected_quote);
+            assert_eq!(alice_quote_exchange_balance, 500_050); // Explicit check for this test case
 
             Ok(())
         })
@@ -3025,7 +3028,8 @@ mod tests {
             exchange.place(alice, base_token, order_amount_base, true, tick)?;
 
             let amount_out_quote = 5_000_000u128;
-            let base_needed = (amount_out_quote * PRICE_SCALE as u128) / price as u128;
+            // For bid orders, base needed is rounded UP
+            let base_needed = quote_to_base(amount_out_quote, tick, RoundingDirection::Up).unwrap();
             let max_amount_in = base_needed + 10000;
 
             exchange.set_balance(bob, base_token, max_amount_in * 2)?;
