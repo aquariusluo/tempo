@@ -34,9 +34,9 @@ pub struct TempoPooledTransaction {
     /// Cached payment classification for efficient block building
     is_payment: bool,
     /// Cached slot of the 2D nonce, if any.
-    nonce_key_slot: OnceLock<Option<U256>>,
+    pub(crate) nonce_key_slot: OnceLock<Option<U256>>,
     /// Cached prepared [`TempoTxEnv`] for payload building.
-    tx_env: OnceLock<TempoTxEnv>,
+    pub(crate) tx_env: OnceLock<TempoTxEnv>,
 }
 
 impl TempoPooledTransaction {

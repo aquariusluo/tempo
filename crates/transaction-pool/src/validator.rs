@@ -736,9 +736,12 @@ where
                         }
                     } else {
                         // This is a 2D nonce transaction - validate against 2D nonce
+                        let nonce_slot = transaction.transaction().nonce_key_slot().ok_or(
+                            InvalidTransactionError::TxTypeNotSupported,
+                        )?;
                         state_nonce = match state_provider.storage(
                             NONCE_PRECOMPILE_ADDRESS,
-                            transaction.transaction().nonce_key_slot().unwrap().into(),
+                            nonce_slot.into(),
                         ) {
                             Ok(nonce) => nonce.unwrap_or_default().saturating_to(),
                             Err(err) => {
@@ -2559,5 +2562,27 @@ mod tests {
             is_paused.unwrap(),
             "Paused validator token should be detected by is_fee_token_paused BEFORE reaching has_enough_liquidity"
         );
+    }
+
+    #[tokio::test]
+    async fn test_aa_missing_nonce_key_slot_rejected() {
+        use crate::transaction::TempoPooledTransaction;
+        use reth_transaction_pool::TransactionValidator;
+        use std::sync::OnceLock;
+
+        // Create a basic AA transaction
+        let transaction = create_aa_transaction(None, None);
+        let validator = setup_validator(&transaction, 1000);
+
+        // Create a new pooled transaction from the recovered interior
+        let recovered = transaction.inner().clone();
+        let mut pooled = TempoPooledTransaction::new(recovered);
+        
+        // MANUALLY set the once lock to None to simulate the bug scenario
+        // where nonce_key_slot returns None for an AA 2D transaction.
+        pooled.nonce_key_slot = OnceLock::from(None);
+
+        let outcome = validator.validate_transaction(TransactionOrigin::External, pooled).await;
+        assert!(outcome.is_invalid());
     }
 }
