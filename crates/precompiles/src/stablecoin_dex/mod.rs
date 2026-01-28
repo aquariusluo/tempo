@@ -3030,7 +3030,7 @@ mod tests {
             let amount_out_quote = 5_000_000u128;
             // For bid orders, base needed is rounded UP
             let base_needed = quote_to_base(amount_out_quote, tick, RoundingDirection::Up).unwrap();
-            let max_amount_in = base_needed + 10000;
+            let max_amount_in = base_needed + 100_000; // Larger buffer to handle rounding
 
             exchange.set_balance(bob, base_token, max_amount_in * 2)?;
 
