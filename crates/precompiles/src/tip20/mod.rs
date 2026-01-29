@@ -349,7 +349,15 @@ impl TIP20Token {
 
         let new_supply = total_supply
             .checked_add(amount)
-            .ok_or(TempoPrecompileError::under_overflow())?;
+            .ok_or_else(|| {
+                tracing::error!(
+                    total_supply = %total_supply,
+                    amount = %amount,
+                    supply_cap = %self.supply_cap(),
+                    "TIP20 mint: total supply overflow detected"
+                );
+                TempoPrecompileError::under_overflow()
+            })?;
 
         let supply_cap = self.supply_cap()?;
         if new_supply > supply_cap {
@@ -362,7 +370,15 @@ impl TIP20Token {
         let to_balance = self.get_balance(to)?;
         let new_to_balance: alloy::primitives::Uint<256, 4> = to_balance
             .checked_add(amount)
-            .ok_or(TempoPrecompileError::under_overflow())?;
+            .ok_or_else(|| {
+                tracing::error!(
+                    to = %to,
+                    current_balance = %to_balance,
+                    amount = %amount,
+                    "TIP20 mint: balance overflow detected"
+                );
+                TempoPrecompileError::under_overflow()
+            })?;
         self.set_balance(to, new_to_balance)?;
 
         self.emit_event(TIP20Event::Transfer(ITIP20::Transfer {
@@ -725,7 +741,15 @@ impl TIP20Token {
         // Adjust balances
         let new_from_balance = from_balance
             .checked_sub(amount)
-            .ok_or(TempoPrecompileError::under_overflow())?;
+            .ok_or_else(|| {
+                tracing::error!(
+                    from = %from,
+                    current_balance = %from_balance,
+                    amount = %amount,
+                    "TIP20 transfer: sender balance overflow detected"
+                );
+                TempoPrecompileError::under_overflow()
+            })?;
 
         self.set_balance(from, new_from_balance)?;
 
@@ -733,7 +757,15 @@ impl TIP20Token {
             let to_balance = self.get_balance(to)?;
             let new_to_balance = to_balance
                 .checked_add(amount)
-                .ok_or(TempoPrecompileError::under_overflow())?;
+                .ok_or_else(|| {
+                    tracing::error!(
+                        to = %to,
+                        current_balance = %to_balance,
+                        amount = %amount,
+                        "TIP20 transfer: recipient balance overflow detected"
+                    );
+                    TempoPrecompileError::under_overflow()
+                })?;
 
             self.set_balance(to, new_to_balance)?;
         }
@@ -764,7 +796,15 @@ impl TIP20Token {
         if from_reward_recipient != Address::ZERO {
             let opted_in_supply = U256::from(self.get_opted_in_supply()?)
                 .checked_sub(amount)
-                .ok_or(TempoPrecompileError::under_overflow())?;
+                .ok_or_else(|| {
+                    tracing::error!(
+                        from_reward_recipient = %from_reward_recipient,
+                        opted_in_supply = %self.get_opted_in_supply(),
+                        amount = %amount,
+                        "TIP20 burn: opted-in supply underflow detected"
+                    );
+                    TempoPrecompileError::under_overflow()
+                })?;
             self.set_opted_in_supply(
                 opted_in_supply
                     .try_into()
@@ -815,7 +855,15 @@ impl TIP20Token {
         if to_reward_recipient != Address::ZERO {
             let opted_in_supply = U256::from(self.get_opted_in_supply()?)
                 .checked_add(refund)
-                .ok_or(TempoPrecompileError::under_overflow())?;
+                .ok_or_else(|| {
+                    tracing::error!(
+                        to_reward_recipient = %to_reward_recipient,
+                        opted_in_supply = %self.get_opted_in_supply(),
+                        refund = %refund,
+                        "TIP20 transfer: opted-in supply overflow detected"
+                    );
+                    TempoPrecompileError::under_overflow()
+                })?;
             self.set_opted_in_supply(
                 opted_in_supply
                     .try_into()
