@@ -106,15 +106,52 @@ Contains comprehensive reproduction steps, testing instructions, and verificatio
 
 ---
 
-## Bug #6: Transaction Pool Memory Leak (False Positive)
+## Bug #6: Transaction Pool unwrap() in Production Code
 
-### Status: ❌ **NOT A BUG** - Test code only
+### Status: ⚠️ **LOW RISK** - Reasonable but could be more defensive
 
 ### Location
-**File**: `crates/transaction-pool/src/pool.rs`
+**File**: `crates/transaction-pool/src/tempo_pool.rs`
+**Lines**: 352, 361
 
 ### Investigation Findings
-The suspected unsafe operations were found within a `#[cfg(test)]` block. These assertions provide validation during testing and are entirely absent from production builds.
+The original report incorrectly classified this as test-only code. The `unwrap()` calls are actually in production code:
+
+```rust
+// Line 352
+.add_transactions(origin, std::iter::once(TransactionValidationOutcome::Valid { ... }))
+    .pop()
+    .unwrap()
+
+// Line 361
+.add_transactions(origin, Some(invalid))
+    .pop()
+    .unwrap()
+```
+
+### Risk Assessment
+These `unwrap()` calls are **reasonably safe** because:
+1. They operate on results from `add_transactions()` with explicit single-item inputs
+2. `std::iter::once()` guarantees one iteration
+3. The `Some(invalid)` variant also guarantees one element
+4. The Reth transaction pool's `add_transactions` returns a Vec with the processed transaction results
+
+However, there is **theoretical risk** if:
+- The Reth implementation changes to return empty results for certain inputs
+- Input validation logic changes that could result in empty outputs
+
+### Recommendation
+While this is low risk, a more defensive approach would handle the `None` case explicitly:
+```rust
+// More defensive approach
+let result = self.protocol_pool
+    .inner()
+    .add_transactions(origin, std::iter::one(outcome))
+    .pop()
+    .expect("add_transactions should return at least one result for single input");
+```
+
+This maintains the unwrap behavior while adding a clear assertion about the expected invariant.
 
 ---
 
@@ -153,6 +190,7 @@ The genesis files are embedded into the binary at compile time using the `includ
 | Bug #3 | Low | ✅ Fixed | Refactored journal access to be fallible |
 | Bug #4 | Low | ⚠️ Observation | Theoretical failure point in runtime init |
 | Bug #5 | Medium | ✅ Fixed | Added detailed logging for TIP-20 overflow detection |
-| Bug #6-8 | N/A | ❌ False Positives | Verified logic and design intent |
+| Bug #6 | Low | ⚠️ Low Risk | Production `unwrap()` calls are reasonably safe |
+| Bug #7-8 | N/A | ❌ False Positives | Verified logic and design intent |
 
 **Conclusion**: The Tempo codebase demonstrates a high standard of defensive programming, particularly regarding integer arithmetic and state isolation. The identified crash vectors have been hardened, significantly improving the network's resilience to malformed inputs and storage inconsistencies. Additionally, overflow detection now includes comprehensive logging for improved production debugging.
