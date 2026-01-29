@@ -99,8 +99,10 @@ fn main() -> eyre::Result<()> {
     //
     // TODO: Can remove this if https://github.com/tokio-rs/tracing/issues/2648
     // ever gets addressed.
-    tempo_eyre::install()
-        .expect("must install the eyre error hook before constructing any eyre reports");
+    if let Err(e) = tempo_eyre::install() {
+        eprintln!("Warning: Failed to install error reporting hook: {e}");
+        eprintln!("Error messages will lack full tracing context. Continuing anyway...");
+    }
 
     // Enable backtraces unless a RUST_BACKTRACE value has already been explicitly provided.
     if std::env::var_os("RUST_BACKTRACE").is_none() {
