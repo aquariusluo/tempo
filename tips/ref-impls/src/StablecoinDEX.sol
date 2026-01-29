@@ -532,11 +532,10 @@ contract StablecoinDEX is IStablecoinDEX {
         return _fillOrder(orderId, fillAmount, 0);
     }
 
-    function _fillOrder(
-        uint128 orderId,
-        uint128 fillAmount,
-        uint128 quoteOverride
-    ) internal returns (uint128 nextOrderAtTick) {
+    function _fillOrder(uint128 orderId, uint128 fillAmount, uint128 quoteOverride)
+        internal
+        returns (uint128 nextOrderAtTick)
+    {
         // NOTE: This can be much more optimized but since this is only a reference contract, readability was prioritized
         IStablecoinDEX.Order storage order = orders[orderId];
         Orderbook storage book = books[order.bookKey];
