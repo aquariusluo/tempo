@@ -153,6 +153,16 @@ let result = self.protocol_pool
 
 This maintains the unwrap behavior while adding a clear assertion about the expected invariant.
 
+### Documentation
+**File**: `tempo-bug-6-submission.md` (commit c4c852e8)
+Contains comprehensive analysis with:
+- Detailed bug description and severity assessment
+- Steps to reproduce for both unwrap() locations
+- Complete testing guide with code examples
+- Three fix options with pros/cons analysis
+- Recommended implementation: use expect() with message
+- Full code context and verification commands
+
 ---
 
 ## Bug #7: Time-Based Validation Race Condition
